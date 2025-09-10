@@ -10,19 +10,20 @@ function LoginPage({ onLogin }) {
     setError('');
 
     try {
-      const response = await fetch('https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net/api/MerchantAuth/login', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include', // This is crucial for CORS with credentials
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        'https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net/api/MerchantAuth/login',
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include', // needed if your API uses cookies or auth headers
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-      // Check if response is ok before trying to parse JSON
       if (!response.ok) {
-        // Try to get error message from response
         let errorMessage = 'Giriş başarısız';
         try {
           const errorData = await response.json();
