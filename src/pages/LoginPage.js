@@ -12,21 +12,33 @@ function LoginPage({ onLogin }) {
     try {
       const response = await fetch('https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net/api/MerchantAuth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include', // This is crucial for CORS with credentials
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
+      // Check if response is ok before trying to parse JSON
       if (!response.ok) {
-        setError(data.message || 'Giriş başarısız');
+        // Try to get error message from response
+        let errorMessage = 'Giriş başarısız';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        setError(errorMessage);
         return;
       }
 
+      const data = await response.json();
       onLogin(data.merchant);
     } catch (err) {
-      console.error(err);
-      setError('Sunucuya bağlanılamıyor');
+      console.error('Login error:', err);
+      setError('Sunucuya bağlanılamıyor - CORS hatası olabilir');
     }
   };
 
