@@ -14,23 +14,44 @@ function ProductSection({
 }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch real products from backend on mount
+  const API_BASE = 'https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net';
+
   useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch('https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net/api/Product');
-      const data = await res.json();
-      // Filter products by merchantId
-      const filtered = data.filter(p => p.merchantId === merchant.merchantId);
-      setProducts(filtered);
-    } catch (err) {
-      // Optionally show error
-    }
-  };
-  fetchProducts();
-  // eslint-disable-next-line
-}, [merchant]);
+    const fetchProducts = async () => {
+      if (!merchant?.merchantId) {
+        setProducts([]);
+        return;
+      }
+      
+      setLoading(true);
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/Product`, { 
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (res.ok) {
+          const allProducts = await res.json();
+          const filteredProducts = allProducts.filter(product => 
+            parseInt(product.merchantId) === parseInt(merchant.merchantId)
+          );
+          setProducts(filteredProducts);
+        } else {
+          setProducts([]);
+        }
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [merchant?.merchantId, setProducts]);
 
   const handleEditClick = (index, product) => {
     setEditingProduct({ ...product, index });
@@ -42,16 +63,22 @@ function ProductSection({
 
   const handleDeleteProduct = async (index) => {
     const product = products[index];
-    if (!product || !product.productId) return;
+    if (!product || !product.productId) {
+      alert('Product ID not found');
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        const res = await fetch(`https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net/api/Product/${product.productId}`, {
-          method: 'DELETE'
+        const res = await fetch(`${API_BASE}/api/Product/${product.productId}`, {
+          method: 'DELETE',
+          credentials: 'include'
         });
+        
         if (res.ok) {
-          // Remove product from local state
           const updatedProducts = products.filter((_, i) => i !== index);
           setProducts(updatedProducts);
+          
           if (editingProduct && editingProduct.index === index) {
             handleCancelEdit();
           } else if (editingProduct && editingProduct.index > index) {
@@ -60,7 +87,8 @@ function ProductSection({
         } else {
           alert('Failed to delete product');
         }
-      } catch {
+      } catch (err) {
+        console.error('Delete error:', err);
         alert('Error deleting product');
       }
     }
@@ -74,6 +102,27 @@ function ProductSection({
     setShowAddProduct(false);
   };
 
+  const refreshProducts = async () => {
+    if (!merchant?.merchantId) return;
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/Product`, { 
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (res.ok) {
+        const allProducts = await res.json();
+        const filteredProducts = allProducts.filter(product => 
+          parseInt(product.merchantId) === parseInt(merchant.merchantId)
+        );
+        setProducts(filteredProducts);
+      }
+    } catch (err) {
+      console.error('Error refreshing products:', err);
+    }
+  };
+
   if (editingProduct) {
     return (
       <EditProduct
@@ -81,6 +130,8 @@ function ProductSection({
         products={products}
         setProducts={setProducts}
         onCancel={handleCancelEdit}
+        merchant={merchant}
+        onSave={refreshProducts}
       />
     );
   }
@@ -97,6 +148,7 @@ function ProductSection({
         setProductPrice={setProductPrice}
         handleAddProduct={handleAddProduct}
         merchant={merchant}
+        onSave={refreshProducts}
       />
     );
   }
@@ -104,7 +156,9 @@ function ProductSection({
   return (
     <section>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Products</h2>
+        <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>
+          Your Products
+        </h2>
         <button
           onClick={handleAddProductClick}
           style={{
@@ -121,8 +175,10 @@ function ProductSection({
           + Add Product
         </button>
       </div>
-      <h3 style={{ color: '#444', fontSize: 17, margin: '24px 0 10px 0' }}>All Products</h3>
-      {products.length > 0 ? (
+      
+      {loading ? (
+        <div style={{ color: '#666', fontSize: 15, marginTop: 8 }}>Loading products...</div>
+      ) : products.length > 0 ? (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 15 }}>
             <thead>
@@ -140,7 +196,7 @@ function ProductSection({
                     {product.name}
                   </td>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>
-                    ${product.price.toFixed(2)}
+                    ${product.price?.toFixed(2) || '0.00'}
                   </td>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>
                     {product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}
@@ -185,7 +241,9 @@ function ProductSection({
           </table>
         </div>
       ) : (
-        <div style={{ color: '#888', fontSize: 15, marginTop: 8 }}>No products yet.</div>
+        <div style={{ color: '#888', fontSize: 15, marginTop: 8 }}>
+          No products found for your merchant account.
+        </div>
       )}
     </section>
   );

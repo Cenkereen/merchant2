@@ -9,42 +9,61 @@ function AddProduct({
   productPrice,
   setProductPrice,
   handleAddProduct,
-  merchant
+  merchant,
+  onSave
 }) {
   const [localName, setLocalName] = useState(productName || '');
   const [localPrice, setLocalPrice] = useState(productPrice || '');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net";
+  const API_URL = "https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net";
 
   const handleSaveProduct = async () => {
     if (!localName.trim() || !localPrice || parseFloat(localPrice) < 0) return;
     setLoading(true);
 
     try {
+      // Add product
       const res = await fetch(`${API_URL}/api/Product`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           merchantId: merchant.merchantId,
           name: localName.trim(),
           price: parseFloat(localPrice)
         })
       });
+
       if (res.ok) {
-        // Fetch all products
-        const productsRes = await fetch(`${API_URL}/api/Product`);
-        const productsData = await productsRes.json();
-        // Filter by merchantId before updating state
-        const filtered = productsData.filter(p => p.merchantId === merchant.merchantId);
-        setProducts(filtered);
+        // Use the same approach as ProductSection - fetch all products and filter
+        const productsRes = await fetch(`${API_URL}/api/Product`, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'include'
+        });
+        
+        if (productsRes.ok) {
+          const allProducts = await productsRes.json();
+          const filteredProducts = allProducts.filter(product => 
+            parseInt(product.merchantId) === parseInt(merchant.merchantId)
+          );
+          setProducts(filteredProducts);
+        }
+        
+        // Clear the form and go back
+        setLocalName('');
+        setLocalPrice('');
+        if (onSave) onSave(); // Call onSave callback if provided
         onCancel();
       } else {
-        alert('Failed to add product');
+        const errorData = await res.json();
+        alert(errorData.message || 'Failed to add product');
       }
-    } catch {
-      alert('Error adding product');
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to server');
     }
+
     setLoading(false);
   };
 

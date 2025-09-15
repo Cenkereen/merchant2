@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MerchantInfo from './MerchantInfo';
 import ProductSection from './ProductSection';
 import TransactionsSection from './TransactionsSection';
@@ -12,7 +12,7 @@ function SidebarButton({ active, onClick, children }) {
         color: active ? '#232526' : '#fff',
         border: 'none',
         borderLeft: active ? '5px solid #4f8cff' : '5px solid transparent',
-        borderRadius: active ? '0 6px 6px 0' : '0 6px 6px 0',
+        borderRadius: '0 6px 6px 0',
         padding: '10px 20px',
         fontSize: 14,
         fontWeight: active ? 700 : 500,
@@ -32,6 +32,8 @@ function SidebarButton({ active, onClick, children }) {
 }
 
 function MerchantPage({ merchant, onLogout }) {
+  // State for merchant data
+  const [merchantData, setMerchantData] = useState(merchant);
   const [merchantName, setMerchantName] = useState(merchant?.name || '');
   const [merchantEmailState, setMerchantEmailState] = useState(merchant?.email || '');
   const [merchantPassword, setMerchantPassword] = useState('');
@@ -41,68 +43,16 @@ function MerchantPage({ merchant, onLogout }) {
   const [productPrice, setProductPrice] = useState('');
 
   const [activeSection, setActiveSection] = useState('merchant');
+  const [isHovered, setIsHovered] = useState(false);
 
-  const API_BASE = 'https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net';
-
-  const handleMerchantNameUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_BASE}/api/MerchantAuth/${merchant.merchantId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: merchantName })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert('Merchant name updated!');
-        setMerchantName(data.merchant.name); // update local state if needed
-      } else {
-        alert('Failed to update name: ' + (data.message || ''));
-      }
-    } catch (err) {
-      alert('Error updating name');
+  // Update local state when merchant prop changes
+  useEffect(() => {
+    if (merchant) {
+      setMerchantData(merchant);
+      setMerchantName(merchant.name || '');
+      setMerchantEmailState(merchant.email || '');
     }
-  };
-
-  const handleMerchantEmailUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_BASE}/api/MerchantAuth/${merchant.merchantId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: merchantEmailState })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert('Merchant email updated!');
-        setMerchantEmailState(data.merchant.email);
-      } else {
-        alert('Failed to update email: ' + (data.message || ''));
-      }
-    } catch (err) {
-      alert('Error updating email');
-    }
-  };
-
-  const handleMerchantPasswordUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${API_BASE}/api/MerchantAuth/${merchant.merchantId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: merchantPassword })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        alert('Merchant password updated!');
-        setMerchantPassword('');
-      } else {
-        alert('Failed to update password: ' + (data.message || ''));
-      }
-    } catch (err) {
-      alert('Error updating password');
-    }
-  };
+  }, [merchant]);
 
   const handleAddProduct = (e) => {
     e.preventDefault();
@@ -141,8 +91,6 @@ function MerchantPage({ merchant, onLogout }) {
     minWidth: 0,
     boxSizing: 'border-box',
   };
-
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div
@@ -229,7 +177,7 @@ function MerchantPage({ merchant, onLogout }) {
         </button>
       </div>
 
-      {/* Main Content - Centered */}
+      {/* Main Content */}
       <div
         style={{
           flex: 1,
@@ -254,15 +202,14 @@ function MerchantPage({ merchant, onLogout }) {
         >
           {activeSection === 'merchant' && (
             <MerchantInfo
+              merchant={merchantData}
               merchantName={merchantName}
               setMerchantName={setMerchantName}
               merchantEmailState={merchantEmailState}
               setMerchantEmailState={setMerchantEmailState}
               merchantPassword={merchantPassword}
               setMerchantPassword={setMerchantPassword}
-              handleMerchantNameUpdate={handleMerchantNameUpdate}
-              handleMerchantEmailUpdate={handleMerchantEmailUpdate}
-              handleMerchantPasswordUpdate={handleMerchantPasswordUpdate}
+              setMerchantData={setMerchantData}
               updateInputStyle={updateInputStyle}
               updateButtonStyle={updateButtonStyle}
             />
@@ -270,6 +217,7 @@ function MerchantPage({ merchant, onLogout }) {
 
           {activeSection === 'product' && (
             <ProductSection
+              merchant={merchantData}
               products={products}
               setProducts={setProducts}
               productName={productName}
@@ -277,12 +225,11 @@ function MerchantPage({ merchant, onLogout }) {
               productPrice={productPrice}
               setProductPrice={setProductPrice}
               handleAddProduct={handleAddProduct}
-              merchant={merchant}
             />
           )}
 
           {activeSection === 'transactions' && (
-            <TransactionsSection merchant={merchant} />
+            <TransactionsSection merchant={merchantData} />
           )}
         </div>
       </div>

@@ -1,40 +1,54 @@
 import React, { useState } from 'react';
 
-function EditProductPage({ editingProduct, products, setProducts, onCancel }) {
-  const [editName, setEditName] = useState(editingProduct.name);
-  const [editPrice, setEditPrice] = useState(editingProduct.price.toString());
+function EditProductPage({ editingProduct, products, setProducts, onCancel, merchant, onSave }) {
+  const [editName, setEditName] = useState(editingProduct?.name || '');
+  const [editPrice, setEditPrice] = useState(editingProduct?.price?.toString() || '');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://cardmanagement-awfgh2ewgqbxa4dy.francecentral-01.azurewebsites.net";
+  const API_URL = "https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net";
 
   const handleSaveEdit = async () => {
     if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) return;
     setLoading(true);
+
     try {
       const res = await fetch(`${API_URL}/api/Product/${editingProduct.productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
+          merchantId: merchant.merchantId,
           name: editName.trim(),
-          price: parseFloat(editPrice)
-        })
+          price: parseFloat(editPrice),
+        }),
       });
+
       if (res.ok) {
-        // Update local products list
-        const updatedProducts = [...products];
-        updatedProducts[editingProduct.index] = {
-          ...updatedProducts[editingProduct.index],
-          name: editName.trim(),
-          price: parseFloat(editPrice)
-        };
-        setProducts(updatedProducts);
+        // Use the same approach as ProductSection - fetch all products and filter
+        const productsRes = await fetch(`${API_URL}/api/Product`, {
+          headers: { Accept: 'application/json' },
+          credentials: 'include',
+        });
+        
+        if (productsRes.ok) {
+          const allProducts = await productsRes.json();
+          const filteredProducts = allProducts.filter(product => 
+            parseInt(product.merchantId) === parseInt(merchant.merchantId)
+          );
+          setProducts(filteredProducts);
+        }
+        
+        if (onSave) onSave(); // Call onSave callback if provided
         onCancel();
       } else {
-        alert('Failed to update product');
+        const errorData = await res.json();
+        alert(errorData.message || 'Failed to update product');
       }
-    } catch {
-      alert('Error updating product');
+    } catch (err) {
+      console.error(err);
+      alert('Error connecting to server');
     }
+
     setLoading(false);
   };
 
@@ -53,49 +67,67 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel }) {
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: 4
+            gap: 4,
           }}
         >
           ← Back
         </button>
         <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Edit Product</h2>
       </div>
-      
-      <div style={{ 
-        background: '#f9f9f9', 
-        padding: 20, 
-        borderRadius: 8, 
-        border: '1px solid #e5e5e5',
-        maxWidth: 400
-      }}>
+
+      <div
+        style={{
+          background: '#f9f9f9',
+          padding: 20,
+          borderRadius: 8,
+          border: '1px solid #e5e5e5',
+          maxWidth: 400,
+        }}
+      >
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#333' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: 6,
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#333',
+            }}
+          >
             Product Name
           </label>
           <input
             type="text"
             value={editName}
-            onChange={e => setEditName(e.target.value)}
+            onChange={(e) => setEditName(e.target.value)}
             style={{
               width: '100%',
               padding: '10px 12px',
               borderRadius: 4,
               border: '1px solid #ddd',
               fontSize: 15,
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
             }}
             autoFocus
           />
         </div>
-        
+
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#333' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: 6,
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#333',
+            }}
+          >
             Price ($)
           </label>
           <input
             type="number"
             value={editPrice}
-            onChange={e => setEditPrice(e.target.value)}
+            onChange={(e) => setEditPrice(e.target.value)}
             min="0"
             step="0.01"
             style={{
@@ -104,24 +136,30 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel }) {
               borderRadius: 4,
               border: '1px solid #ddd',
               fontSize: 15,
-              boxSizing: 'border-box'
+              boxSizing: 'border-box',
             }}
           />
         </div>
-        
+
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={handleSaveEdit}
             disabled={!editName.trim() || !editPrice || parseFloat(editPrice) < 0 || loading}
             style={{
               padding: '10px 20px',
-              background: (!editName.trim() || !editPrice || parseFloat(editPrice) < 0 || loading) ? '#ccc' : '#28a745',
+              background:
+                !editName.trim() || !editPrice || parseFloat(editPrice) < 0 || loading
+                  ? '#ccc'
+                  : '#28a745',
               color: '#fff',
               border: 'none',
               borderRadius: 4,
               fontSize: 15,
               fontWeight: 500,
-              cursor: (!editName.trim() || !editPrice || parseFloat(editPrice) < 0 || loading) ? 'not-allowed' : 'pointer'
+              cursor:
+                !editName.trim() || !editPrice || parseFloat(editPrice) < 0 || loading
+                  ? 'not-allowed'
+                  : 'pointer',
             }}
           >
             {loading ? 'Saving...' : 'Save Changes'}
@@ -136,7 +174,7 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel }) {
               borderRadius: 4,
               fontSize: 15,
               fontWeight: 500,
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             Cancel

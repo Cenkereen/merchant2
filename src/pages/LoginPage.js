@@ -1,30 +1,48 @@
 import React, { useState } from 'react';
 
-function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+function LoginRegisterPage({ onLogin }) {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
+
+    const endpoint = isLogin ? 'login' : 'register';
+    const requestBody = isLogin 
+      ? { email: formData.email, password: formData.password }
+      : { name: formData.name, email: formData.email, password: formData.password };
 
     try {
       const response = await fetch(
-        'https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net/api/MerchantAuth/login',
+        `https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net/api/MerchantAuth/${endpoint}`,
         {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           },
-          credentials: 'include', // needed if your API uses cookies or auth headers
-          body: JSON.stringify({ email, password }),
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
         }
       );
 
       if (!response.ok) {
-        let errorMessage = 'Giriş başarısız';
+        let errorMessage = isLogin ? 'Login Failed' : 'Register Failed';
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
@@ -36,11 +54,27 @@ function LoginPage({ onLogin }) {
       }
 
       const data = await response.json();
-      onLogin(data.merchant);
+      
+      if (isLogin) {
+        onLogin(data.merchant);
+      } else {
+        setSuccess('Register Successful');
+        setFormData({ name: '', email: '', password: '' });
+        setTimeout(() => {
+          setIsLogin(true);
+          setSuccess('');
+        }, 2000);
+      }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Sunucuya bağlanılamıyor - CORS hatası olabilir');
+      console.error(`${isLogin ? 'Login' : 'Register'} error:`, err);
     }
+  };
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setSuccess('');
+    setFormData({ name: '', email: '', password: '' });
   };
 
   return (
@@ -65,27 +99,49 @@ function LoginPage({ onLogin }) {
           maxWidth: 340,
         }}
       >
-        <h2 style={{ color: '#222', fontSize: 22, marginBottom: 24, textAlign: 'center' }}>Merchant Login</h2>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <h2 style={{ color: '#222', fontSize: 22, marginBottom: 24, textAlign: 'center' }}>
+          {isLogin ? 'Merchant Login' : 'Merchant Register'}
+        </h2>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {!isLogin && (
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              placeholder="Name"
+              style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
+            />
+          )}
+          
           <input
             type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
             required
             placeholder="Email"
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
+          
           <input
             type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
             required
             placeholder="Password"
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
+          
           {error && <div style={{ color: 'red', fontSize: 14 }}>{error}</div>}
+          {success && <div style={{ color: 'green', fontSize: 14 }}>{success}</div>}
+          
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             style={{
               padding: '10px 0',
               background: '#222',
@@ -98,12 +154,29 @@ function LoginPage({ onLogin }) {
               marginTop: 8,
             }}
           >
-            Login
+            {isLogin ? 'Login' : 'Register'}
           </button>
-        </form>
+        </div>
+        
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <button
+            type="button"
+            onClick={switchMode}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#666',
+              fontSize: 14,
+              cursor: 'pointer',
+              textDecoration: 'underline',
+            }}
+          >
+            {isLogin ? 'Register' : 'Login'}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-export default LoginPage;
+export default LoginRegisterPage;
