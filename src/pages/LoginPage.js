@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
 
+// Use environment variable for backend URL
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
+  "https://merchant-backend-hcww2wxzu-cenkereens-projects.vercel.app";
+
 function LoginRegisterPage({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -23,50 +20,39 @@ function LoginRegisterPage({ onLogin }) {
     setSuccess('');
 
     const endpoint = isLogin ? 'login' : 'register';
-    const requestBody = isLogin 
+    const payload = isLogin
       ? { email: formData.email, password: formData.password }
       : { name: formData.name, email: formData.email, password: formData.password };
 
     try {
-      const response = await fetch(
-        `https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net/api/MerchantAuth/${endpoint}`,
-        {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/api/MerchantAuth/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // only if backend uses cookies/session
+        body: JSON.stringify(payload),
+      });
 
       if (!response.ok) {
-        let errorMessage = isLogin ? 'Login Failed' : 'Register Failed';
+        let msg = isLogin ? 'Login Failed' : 'Register Failed';
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        setError(errorMessage);
+          const data = await response.json();
+          msg = data.message || msg;
+        } catch {}
+        setError(msg);
         return;
       }
 
       const data = await response.json();
-      
       if (isLogin) {
         onLogin(data.merchant);
       } else {
-        setSuccess('Register Successful');
+        setSuccess('Registration Successful!');
         setFormData({ name: '', email: '', password: '' });
-        setTimeout(() => {
-          setIsLogin(true);
-          setSuccess('');
-        }, 2000);
+        setTimeout(() => { setIsLogin(true); setSuccess(''); }, 2000);
       }
     } catch (err) {
-      console.error(`${isLogin ? 'Login' : 'Register'} error:`, err);
+      console.error(err);
+      setError(`${isLogin ? 'Login' : 'Register'} failed. Please try again.`);
     }
   };
 
@@ -78,31 +64,27 @@ function LoginRegisterPage({ onLogin }) {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#f7f7f7',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 8,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-          padding: 32,
-          minWidth: 320,
-          width: '100%',
-          maxWidth: 340,
-        }}
-      >
-        <h2 style={{ color: '#222', fontSize: 22, marginBottom: 24, textAlign: 'center' }}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'system-ui, sans-serif',
+      background: '#f7f7f7',
+    }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: 8,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        padding: 32,
+        minWidth: 320,
+        width: '100%',
+        maxWidth: 340,
+      }}>
+        <h2 style={{ fontSize: 22, marginBottom: 24, textAlign: 'center', color: '#222' }}>
           {isLogin ? 'Merchant Login' : 'Merchant Register'}
         </h2>
-        
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!isLogin && (
             <input
@@ -110,35 +92,35 @@ function LoginRegisterPage({ onLogin }) {
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              required
               placeholder="Name"
+              required
               style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
             />
           )}
-          
+
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            required
             placeholder="Email"
+            required
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
-          
+
           <input
             type="password"
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            required
             placeholder="Password"
+            required
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
-          
+
           {error && <div style={{ color: 'red', fontSize: 14 }}>{error}</div>}
           {success && <div style={{ color: 'green', fontSize: 14 }}>{success}</div>}
-          
+
           <button
             type="button"
             onClick={handleSubmit}
@@ -157,7 +139,7 @@ function LoginRegisterPage({ onLogin }) {
             {isLogin ? 'Login' : 'Register'}
           </button>
         </div>
-        
+
         <div style={{ textAlign: 'center', marginTop: 20 }}>
           <button
             type="button"
