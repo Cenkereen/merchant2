@@ -11,7 +11,7 @@ function LoginRegisterPage({ onLogin }) {
   const [success, setSuccess] = useState('');
 
   // Railway backend base URL
-const API_BASE = "http://merchant.somee.com/api/MerchantAuth";
+const API_BASE = "https://merchant.somee.com/api/MerchantAuth";
 
   const handleInputChange = (e) => {
     setFormData({
