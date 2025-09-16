@@ -17,7 +17,7 @@ function AddProduct({
   const [loading, setLoading] = useState(false);
 
   // Use the Somee hosted API URL (HTTP)
-  const API_URL = "http://merchant.somee.com/api";
+  const API_URL = "https://merchant.somee.com/api";
 
   const handleSaveProduct = async () => {
     if (!localName.trim() || !localPrice || parseFloat(localPrice) < 0) return;
