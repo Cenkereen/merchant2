@@ -5,17 +5,17 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
   const [editPrice, setEditPrice] = useState(editingProduct?.price?.toString() || '');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net";
+  // Somee hosted backend API
+  const API_URL = "http://merchant.somee.com/api";
 
   const handleSaveEdit = async () => {
     if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) return;
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/api/Product/${editingProduct.productId}`, {
+      const res = await fetch(`${API_URL}/Product/${editingProduct.productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           merchantId: merchant.merchantId,
           name: editName.trim(),
@@ -24,10 +24,9 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
       });
 
       if (res.ok) {
-        // Use the same approach as ProductSection - fetch all products and filter
-        const productsRes = await fetch(`${API_URL}/api/Product`, {
+        // Fetch all products and filter by merchant
+        const productsRes = await fetch(`${API_URL}/Product`, {
           headers: { Accept: 'application/json' },
-          credentials: 'include',
         });
         
         if (productsRes.ok) {

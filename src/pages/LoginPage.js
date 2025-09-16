@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 
-// Use environment variable for backend URL
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 
-  "https://merchant-backend-hcww2wxzu-cenkereens-projects.vercel.app";
-
 function LoginRegisterPage({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Use HTTP instead of HTTPS for Somee free hosting
+  const API_BASE = "http://merchant.somee.com/api/MerchantAuth";
+
   const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -20,39 +26,44 @@ function LoginRegisterPage({ onLogin }) {
     setSuccess('');
 
     const endpoint = isLogin ? 'login' : 'register';
-    const payload = isLogin
+    const requestBody = isLogin
       ? { email: formData.email, password: formData.password }
       : { name: formData.name, email: formData.email, password: formData.password };
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/MerchantAuth/${endpoint}`, {
+      const response = await fetch(`${API_BASE}/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // only if backend uses cookies/session
-        body: JSON.stringify(payload),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        let msg = isLogin ? 'Login Failed' : 'Register Failed';
+        let errorMessage = isLogin ? 'Login Failed' : 'Register Failed';
         try {
-          const data = await response.json();
-          msg = data.message || msg;
-        } catch {}
-        setError(msg);
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        setError(errorMessage);
         return;
       }
 
       const data = await response.json();
+
       if (isLogin) {
         onLogin(data.merchant);
       } else {
-        setSuccess('Registration Successful!');
+        setSuccess('Register Successful');
         setFormData({ name: '', email: '', password: '' });
-        setTimeout(() => { setIsLogin(true); setSuccess(''); }, 2000);
+        setTimeout(() => {
+          setIsLogin(true);
+          setSuccess('');
+        }, 2000);
       }
     } catch (err) {
-      console.error(err);
-      setError(`${isLogin ? 'Login' : 'Register'} failed. Please try again.`);
+      console.error(`${isLogin ? 'Login' : 'Register'} error:`, err);
+      setError("Network error. Please try again.");
     }
   };
 
@@ -64,24 +75,28 @@ function LoginRegisterPage({ onLogin }) {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'system-ui, sans-serif',
-      background: '#f7f7f7',
-    }}>
-      <div style={{
-        background: '#fff',
-        borderRadius: 8,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        padding: 32,
-        minWidth: 320,
-        width: '100%',
-        maxWidth: 340,
-      }}>
-        <h2 style={{ fontSize: 22, marginBottom: 24, textAlign: 'center', color: '#222' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#f7f7f7',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <div
+        style={{
+          background: '#fff',
+          borderRadius: 8,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          padding: 32,
+          minWidth: 320,
+          width: '100%',
+          maxWidth: 340,
+        }}
+      >
+        <h2 style={{ color: '#222', fontSize: 22, marginBottom: 24, textAlign: 'center' }}>
           {isLogin ? 'Merchant Login' : 'Merchant Register'}
         </h2>
 
@@ -92,8 +107,8 @@ function LoginRegisterPage({ onLogin }) {
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="Name"
               required
+              placeholder="Name"
               style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
             />
           )}
@@ -103,8 +118,8 @@ function LoginRegisterPage({ onLogin }) {
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            placeholder="Email"
             required
+            placeholder="Email"
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
 
@@ -113,8 +128,8 @@ function LoginRegisterPage({ onLogin }) {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            placeholder="Password"
             required
+            placeholder="Password"
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
 

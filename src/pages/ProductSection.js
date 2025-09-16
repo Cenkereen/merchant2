@@ -16,27 +16,29 @@ function ProductSection({
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const API_BASE = 'https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net';
+  // Fixed: Use consistent API URL with /api path
+  const API_BASE = "http://merchant.somee.com/api";
 
+  // Fetch products from backend
   useEffect(() => {
     const fetchProducts = async () => {
       if (!merchant?.merchantId) {
         setProducts([]);
         return;
       }
-      
+
       setLoading(true);
-      
+
       try {
-        const res = await fetch(`${API_BASE}/api/Product`, { 
+        const res = await fetch(`${API_BASE}/Product`, {
           credentials: 'include',
           headers: { 'Accept': 'application/json' }
         });
-        
+
         if (res.ok) {
           const allProducts = await res.json();
-          const filteredProducts = allProducts.filter(product => 
-            parseInt(product.merchantId) === parseInt(merchant.merchantId)
+          const filteredProducts = allProducts.filter(p => 
+            parseInt(p.merchantId) === parseInt(merchant.merchantId)
           );
           setProducts(filteredProducts);
         } else {
@@ -57,64 +59,57 @@ function ProductSection({
     setEditingProduct({ ...product, index });
   };
 
-  const handleCancelEdit = () => {
-    setEditingProduct(null);
-  };
+  const handleCancelEdit = () => setEditingProduct(null);
 
   const handleDeleteProduct = async (index) => {
     const product = products[index];
-    if (!product || !product.productId) {
+    if (!product?.productId) {
       alert('Product ID not found');
       return;
     }
-    
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        const res = await fetch(`${API_BASE}/api/Product/${product.productId}`, {
-          method: 'DELETE',
-          credentials: 'include'
-        });
-        
-        if (res.ok) {
-          const updatedProducts = products.filter((_, i) => i !== index);
-          setProducts(updatedProducts);
-          
-          if (editingProduct && editingProduct.index === index) {
-            handleCancelEdit();
-          } else if (editingProduct && editingProduct.index > index) {
-            setEditingProduct({ ...editingProduct, index: editingProduct.index - 1 });
-          }
-        } else {
-          alert('Failed to delete product');
-        }
-      } catch (err) {
-        console.error('Delete error:', err);
-        alert('Error deleting product');
+
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+
+    try {
+      // Fixed: Now using correct API URL with /api path
+      const res = await fetch(`${API_BASE}/Product/${product.productId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (res.ok) {
+        // Remove deleted product from state
+        const updatedProducts = products.filter((_, i) => i !== index);
+        setProducts(updatedProducts);
+
+        if (editingProduct && editingProduct.index === index) handleCancelEdit();
+        else if (editingProduct && editingProduct.index > index)
+          setEditingProduct({ ...editingProduct, index: editingProduct.index - 1 });
+      } else {
+        const errorText = await res.text();
+        console.error('Delete failed:', errorText);
+        alert('Failed to delete product');
       }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Error deleting product');
     }
   };
 
-  const handleAddProductClick = () => {
-    setShowAddProduct(true);
-  };
-
-  const handleCancelAdd = () => {
-    setShowAddProduct(false);
-  };
+  const handleAddProductClick = () => setShowAddProduct(true);
+  const handleCancelAdd = () => setShowAddProduct(false);
 
   const refreshProducts = async () => {
     if (!merchant?.merchantId) return;
-    
     try {
-      const res = await fetch(`${API_BASE}/api/Product`, { 
+      const res = await fetch(`${API_BASE}/Product`, {
         credentials: 'include',
         headers: { 'Accept': 'application/json' }
       });
-      
       if (res.ok) {
         const allProducts = await res.json();
-        const filteredProducts = allProducts.filter(product => 
-          parseInt(product.merchantId) === parseInt(merchant.merchantId)
+        const filteredProducts = allProducts.filter(p => 
+          parseInt(p.merchantId) === parseInt(merchant.merchantId)
         );
         setProducts(filteredProducts);
       }
@@ -156,26 +151,19 @@ function ProductSection({
   return (
     <section>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>
-          Your Products
-        </h2>
-        <button
-          onClick={handleAddProductClick}
-          style={{
-            padding: '10px 20px',
-            background: '#28a745',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            fontSize: 15,
-            fontWeight: 500,
-            cursor: 'pointer'
-          }}
-        >
-          + Add Product
-        </button>
+        <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Your Products</h2>
+        <button onClick={handleAddProductClick} style={{
+          padding: '10px 20px',
+          background: '#28a745',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 4,
+          fontSize: 15,
+          fontWeight: 500,
+          cursor: 'pointer'
+        }}>+ Add Product</button>
       </div>
-      
+
       {loading ? (
         <div style={{ color: '#666', fontSize: 15, marginTop: 8 }}>Loading products...</div>
       ) : products.length > 0 ? (
@@ -192,47 +180,31 @@ function ProductSection({
             <tbody>
               {products.map((product, index) => (
                 <tr key={product.productId || index} style={{ background: index % 2 === 0 ? '#fff' : '#fafbfc' }}>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>
-                    {product.name}
-                  </td>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>
-                    ${product.price?.toFixed(2) || '0.00'}
-                  </td>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>
-                    {product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}
-                  </td>
+                  <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.name}</td>
+                  <td style={{ padding: 8, verticalAlign: 'middle' }}>${product.price?.toFixed(2) || '0.00'}</td>
+                  <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}</td>
                   <td style={{ padding: 8, verticalAlign: 'middle', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                      <button
-                        onClick={() => handleEditClick(index, product)}
-                        style={{
-                          padding: '4px 8px',
-                          background: '#007bff',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: 3,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteProduct(index)}
-                        style={{
-                          padding: '4px 8px',
-                          background: '#dc3545',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: 3,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      >
-                        Delete
-                      </button>
+                      <button onClick={() => handleEditClick(index, product)} style={{
+                        padding: '4px 8px',
+                        background: '#007bff',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 3,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontWeight: 500
+                      }}>Edit</button>
+                      <button onClick={() => handleDeleteProduct(index)} style={{
+                        padding: '4px 8px',
+                        background: '#dc3545',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 3,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        fontWeight: 500
+                      }}>Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -241,9 +213,7 @@ function ProductSection({
           </table>
         </div>
       ) : (
-        <div style={{ color: '#888', fontSize: 15, marginTop: 8 }}>
-          No products found for your merchant account.
-        </div>
+        <div style={{ color: '#888', fontSize: 15, marginTop: 8 }}>No products found for your merchant account.</div>
       )}
     </section>
   );

@@ -8,7 +8,7 @@ function TransactionsSection({ merchant }) {
   const [error, setError] = useState('');
 
   // Use the same API base as other components
-  const API_BASE = 'https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net';
+const API_BASE = 'http://merchant.somee.com';
 
   const handleFilter = async (e) => {
     e.preventDefault();

@@ -12,11 +12,11 @@ function MerchantInfo({
   updateInputStyle,
   updateButtonStyle
 }) {
-  const API_URL = "https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net";
+  const API_URL = "http://merchant.somee.com"; // <-- Updated URL
 
   const handleMerchantNameUpdate = async (e) => {
     e.preventDefault();
-    
+
     if (!merchant || !merchant.merchantId) {
       alert('Merchant information is missing. Please try logging out and logging back in.');
       return;
@@ -58,7 +58,7 @@ function MerchantInfo({
 
   const handleMerchantEmailUpdate = async (e) => {
     e.preventDefault();
-    
+
     if (!merchant || !merchant.merchantId) {
       alert('Merchant information is missing. Please try logging out and logging back in.');
       return;
@@ -100,7 +100,7 @@ function MerchantInfo({
 
   const handleMerchantPasswordUpdate = async (e) => {
     e.preventDefault();
-    
+
     if (!merchant || !merchant.merchantId) {
       alert('Merchant information is missing. Please try logging out and logging back in.');
       return;

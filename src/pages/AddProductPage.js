@@ -16,7 +16,8 @@ function AddProduct({
   const [localPrice, setLocalPrice] = useState(productPrice || '');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "https://merchant-backend2-afbdgva6d4d9c4g0.francecentral-01.azurewebsites.net";
+  // Use the Somee hosted API URL (HTTP)
+  const API_URL = "http://merchant.somee.com/api";
 
   const handleSaveProduct = async () => {
     if (!localName.trim() || !localPrice || parseFloat(localPrice) < 0) return;
@@ -24,10 +25,9 @@ function AddProduct({
 
     try {
       // Add product
-      const res = await fetch(`${API_URL}/api/Product`, {
+      const res = await fetch(`${API_URL}/Product`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           merchantId: merchant.merchantId,
           name: localName.trim(),
@@ -36,10 +36,9 @@ function AddProduct({
       });
 
       if (res.ok) {
-        // Use the same approach as ProductSection - fetch all products and filter
-        const productsRes = await fetch(`${API_URL}/api/Product`, {
-          headers: { 'Accept': 'application/json' },
-          credentials: 'include'
+        // Fetch all products and filter by merchant
+        const productsRes = await fetch(`${API_URL}/Product`, {
+          headers: { 'Accept': 'application/json' }
         });
         
         if (productsRes.ok) {
@@ -53,7 +52,7 @@ function AddProduct({
         // Clear the form and go back
         setLocalName('');
         setLocalPrice('');
-        if (onSave) onSave(); // Call onSave callback if provided
+        if (onSave) onSave();
         onCancel();
       } else {
         const errorData = await res.json();
