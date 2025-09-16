@@ -8,7 +8,7 @@ function TransactionsSection({ merchant }) {
   const [error, setError] = useState('');
 
   // Use the same API base as other components
-const API_BASE = 'https://merchant.somee.com';
+const API_BASE = 'http://merchant.somee.com';
 
   const handleFilter = async (e) => {
     e.preventDefault();

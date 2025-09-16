@@ -6,7 +6,7 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
   const [loading, setLoading] = useState(false);
 
   // Somee hosted backend API
-  const API_URL = "https://merchant.somee.com/api";
+  const API_URL = "http://merchant.somee.com/api";
 
   const handleSaveEdit = async () => {
     if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) return;
