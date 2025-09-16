@@ -17,7 +17,7 @@ function ProductSection({
   const [loading, setLoading] = useState(false);
 
   // Fixed: Use consistent API URL with /api path
-  const API_BASE = "http://merchant.somee.com/api";
+  const API_BASE = "https://merchant.somee.com/api";
 
   // Fetch products from backend
   useEffect(() => {

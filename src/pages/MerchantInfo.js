@@ -12,7 +12,7 @@ function MerchantInfo({
   updateInputStyle,
   updateButtonStyle
 }) {
-  const API_URL = "http://merchant.somee.com"; // <-- Updated URL
+  const API_URL = "https://merchant.somee.com"; // <-- Updated URL
 
   const handleMerchantNameUpdate = async (e) => {
     e.preventDefault();
