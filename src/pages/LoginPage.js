@@ -10,8 +10,8 @@ function LoginRegisterPage({ onLogin }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Use HTTP instead of HTTPS for Somee free hosting
-  const API_BASE = "http://merchant.somee.com/api/MerchantAuth";
+  // Railway backend base URL
+const API_BASE = "https://merchant.somee.com/api/MerchantAuth";
 
   const handleInputChange = (e) => {
     setFormData({
@@ -26,16 +26,23 @@ function LoginRegisterPage({ onLogin }) {
     setSuccess('');
 
     const endpoint = isLogin ? 'login' : 'register';
-    const requestBody = isLogin
+    const requestBody = isLogin 
       ? { email: formData.email, password: formData.password }
       : { name: formData.name, email: formData.email, password: formData.password };
 
     try {
-      const response = await fetch(`${API_BASE}/${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        `${API_BASE}/${endpoint}`,
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         let errorMessage = isLogin ? 'Login Failed' : 'Register Failed';
@@ -50,7 +57,7 @@ function LoginRegisterPage({ onLogin }) {
       }
 
       const data = await response.json();
-
+      
       if (isLogin) {
         onLogin(data.merchant);
       } else {
@@ -99,7 +106,7 @@ function LoginRegisterPage({ onLogin }) {
         <h2 style={{ color: '#222', fontSize: 22, marginBottom: 24, textAlign: 'center' }}>
           {isLogin ? 'Merchant Login' : 'Merchant Register'}
         </h2>
-
+        
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!isLogin && (
             <input
@@ -112,7 +119,7 @@ function LoginRegisterPage({ onLogin }) {
               style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
             />
           )}
-
+          
           <input
             type="email"
             name="email"
@@ -122,7 +129,7 @@ function LoginRegisterPage({ onLogin }) {
             placeholder="Email"
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
-
+          
           <input
             type="password"
             name="password"
@@ -132,10 +139,10 @@ function LoginRegisterPage({ onLogin }) {
             placeholder="Password"
             style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
-
+          
           {error && <div style={{ color: 'red', fontSize: 14 }}>{error}</div>}
           {success && <div style={{ color: 'green', fontSize: 14 }}>{success}</div>}
-
+          
           <button
             type="button"
             onClick={handleSubmit}
@@ -154,7 +161,7 @@ function LoginRegisterPage({ onLogin }) {
             {isLogin ? 'Login' : 'Register'}
           </button>
         </div>
-
+        
         <div style={{ textAlign: 'center', marginTop: 20 }}>
           <button
             type="button"
