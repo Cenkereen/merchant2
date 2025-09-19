@@ -2,22 +2,16 @@ import React, { useState } from 'react';
 
 function LoginRegisterPage({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Railway backend base URL
-const API_BASE = "https://merchant.somee.com/api/Auth";
+  // Backend base URLs
+  const API_AUTH = "https://merchant.somee.com/api/Auth";
+  const API_MERCHANT = "https://merchant.somee.com/api/Merchant";
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -25,48 +19,46 @@ const API_BASE = "https://merchant.somee.com/api/Auth";
     setError('');
     setSuccess('');
 
-    const endpoint = isLogin ? 'login' : 'register';
-    const requestBody = isLogin 
-      ? { email: formData.email, password: formData.password }
-      : { name: formData.name, email: formData.email, password: formData.password };
-
     try {
-      const response = await fetch(
-        `${API_BASE}/${endpoint}`,
-        {
+      let response;
+
+      if (isLogin) {
+        // Login via Auth controller
+        response = await fetch(`${API_AUTH}/login`, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          credentials: 'include',
-          body: JSON.stringify(requestBody),
-        }
-      );
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, password: formData.password }),
+        });
+      } else {
+        // Register via Merchant controller
+        response = await fetch(API_MERCHANT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password
+          }),
+        });
+      }
 
       if (!response.ok) {
-        let errorMessage = isLogin ? 'Login Failed' : 'Register Failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        setError(errorMessage);
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.message || `${isLogin ? 'Login' : 'Register'} failed`);
         return;
       }
 
       const data = await response.json();
-      
+
       if (isLogin) {
-        // Store tokens in localStorage for protected API calls
+        // Save tokens for future API calls
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('refreshToken', data.refreshToken);
 
-        // Pass merchant info to parent
+        // Notify parent component of logged-in merchant
         onLogin(data.merchant);
       } else {
-        setSuccess('Register Successful');
+        setSuccess('Registration successful! You can now login.');
         setFormData({ name: '', email: '', password: '' });
         setTimeout(() => {
           setIsLogin(true);
@@ -74,8 +66,8 @@ const API_BASE = "https://merchant.somee.com/api/Auth";
         }, 2000);
       }
     } catch (err) {
-      console.error(`${isLogin ? 'Login' : 'Register'} error:`, err);
-      setError("Network error. Please try again.");
+      console.error(err);
+      setError('Network error. Please try again.');
     }
   };
 
@@ -87,99 +79,56 @@ const API_BASE = "https://merchant.somee.com/api/Auth";
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#f7f7f7',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          background: '#fff',
-          borderRadius: 8,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-          padding: 32,
-          minWidth: 320,
-          width: '100%',
-          maxWidth: 340,
-        }}
-      >
-        <h2 style={{ color: '#222', fontSize: 22, marginBottom: 24, textAlign: 'center' }}>
-          {isLogin ? 'Merchant Login' : 'Merchant Register'}
-        </h2>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f7f7f7' }}>
+      <div style={{ background: '#fff', borderRadius: 8, padding: 32, width: '100%', maxWidth: 340, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: 24 }}>{isLogin ? 'Merchant Login' : 'Merchant Register'}</h2>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {!isLogin && (
             <input
-              type="text"
               name="name"
+              placeholder="Name"
               value={formData.name}
               onChange={handleInputChange}
+              style={{ padding: '10px', borderRadius: 4, border: '1px solid #ddd' }}
               required
-              placeholder="Name"
-              style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
             />
           )}
           
           <input
-            type="email"
             name="email"
+            type="email"
+            placeholder="Email"
             value={formData.email}
             onChange={handleInputChange}
+            style={{ padding: '10px', borderRadius: 4, border: '1px solid #ddd' }}
             required
-            placeholder="Email"
-            style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
           
           <input
-            type="password"
             name="password"
+            type="password"
+            placeholder="Password"
             value={formData.password}
             onChange={handleInputChange}
+            style={{ padding: '10px', borderRadius: 4, border: '1px solid #ddd' }}
             required
-            placeholder="Password"
-            style={{ padding: '10px 12px', borderRadius: 4, border: '1px solid #ddd', fontSize: 15 }}
           />
-          
+
           {error && <div style={{ color: 'red', fontSize: 14 }}>{error}</div>}
           {success && <div style={{ color: 'green', fontSize: 14 }}>{success}</div>}
-          
+
           <button
             type="button"
             onClick={handleSubmit}
-            style={{
-              padding: '10px 0',
-              background: '#222',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              fontSize: 16,
-              fontWeight: 500,
-              cursor: 'pointer',
-              marginTop: 8,
-            }}
+            style={{ padding: '10px 0', background: '#222', color: '#fff', borderRadius: 4, cursor: 'pointer' }}
           >
             {isLogin ? 'Login' : 'Register'}
           </button>
         </div>
-        
+
         <div style={{ textAlign: 'center', marginTop: 20 }}>
-          <button
-            type="button"
-            onClick={switchMode}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#666',
-              fontSize: 14,
-              cursor: 'pointer',
-              textDecoration: 'underline',
-            }}
-          >
+          <button onClick={switchMode} style={{ background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', color: '#666' }}>
             {isLogin ? 'Register' : 'Login'}
           </button>
         </div>
