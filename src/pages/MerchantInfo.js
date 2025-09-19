@@ -12,132 +12,58 @@ function MerchantInfo({
   updateInputStyle,
   updateButtonStyle
 }) {
-  const API_URL = "https://merchant.somee.com"; // <-- Updated URL
+  const API_URL = "https://merchant.somee.com/api";
 
-  const handleMerchantNameUpdate = async (e) => {
-    e.preventDefault();
-
-    if (!merchant || !merchant.merchantId) {
+  const handleUpdateField = async (field, value) => {
+    if (!merchant?.merchantId) {
       alert('Merchant information is missing. Please try logging out and logging back in.');
       return;
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/MerchantAuth/${merchant.merchantId}`, {
-        method: 'PUT',
+      const res = await fetch(`${API_URL}/Merchant/${merchant.merchantId}`, {
+        method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({ name: merchantName })
+        body: JSON.stringify({ [field]: value })
       });
 
       if (res.ok) {
-        const responseData = await res.json();
-        if (responseData.success && responseData.merchant) {
-          setMerchantData(responseData.merchant);
-          alert('Name updated successfully');
-        } else {
-          alert(responseData.message || 'Failed to update name');
-        }
+        const updatedMerchant = await res.json();
+        setMerchantData(updatedMerchant);
+        alert(`${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`);
+        if (field === 'password') setMerchantPassword('');
       } else {
         const errorText = await res.text();
         try {
           const errorJson = JSON.parse(errorText);
-          alert(errorJson.message || 'Failed to update name');
+          alert(errorJson.message || `Failed to update ${field}`);
         } catch {
-          alert(`Failed to update name. Status: ${res.status}`);
+          alert(`Failed to update ${field}. Status: ${res.status}`);
         }
       }
     } catch (err) {
-      console.error('Network error:', err);
-      alert('Error connecting to server: ' + err.message);
+      console.error(`Network error updating ${field}:`, err);
+      alert(`Error connecting to server: ${err.message}`);
     }
   };
 
-  const handleMerchantEmailUpdate = async (e) => {
+  const handleMerchantNameUpdate = (e) => {
     e.preventDefault();
-
-    if (!merchant || !merchant.merchantId) {
-      alert('Merchant information is missing. Please try logging out and logging back in.');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/api/MerchantAuth/${merchant.merchantId}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email: merchantEmailState })
-      });
-
-      if (res.ok) {
-        const responseData = await res.json();
-        if (responseData.success && responseData.merchant) {
-          setMerchantData(responseData.merchant);
-          alert('Email updated successfully');
-        } else {
-          alert(responseData.message || 'Failed to update email');
-        }
-      } else {
-        const errorText = await res.text();
-        try {
-          const errorJson = JSON.parse(errorText);
-          alert(errorJson.message || 'Failed to update email');
-        } catch {
-          alert(`Failed to update email. Status: ${res.status}`);
-        }
-      }
-    } catch (err) {
-      console.error('Network error:', err);
-      alert('Error connecting to server: ' + err.message);
-    }
+    handleUpdateField('name', merchantName);
   };
 
-  const handleMerchantPasswordUpdate = async (e) => {
+  const handleMerchantEmailUpdate = (e) => {
     e.preventDefault();
+    handleUpdateField('email', merchantEmailState);
+  };
 
-    if (!merchant || !merchant.merchantId) {
-      alert('Merchant information is missing. Please try logging out and logging back in.');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_URL}/api/MerchantAuth/${merchant.merchantId}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ password: merchantPassword })
-      });
-
-      if (res.ok) {
-        const responseData = await res.json();
-        if (responseData.success) {
-          alert('Password updated successfully');
-          setMerchantPassword('');
-        } else {
-          alert(responseData.message || 'Failed to update password');
-        }
-      } else {
-        const errorText = await res.text();
-        try {
-          const errorJson = JSON.parse(errorText);
-          alert(errorJson.message || 'Failed to update password');
-        } catch {
-          alert(`Failed to update password. Status: ${res.status}`);
-        }
-      }
-    } catch (err) {
-      console.error('Network error:', err);
-      alert('Error connecting to server: ' + err.message);
-    }
+  const handleMerchantPasswordUpdate = (e) => {
+    e.preventDefault();
+    handleUpdateField('password', merchantPassword);
   };
 
   return (

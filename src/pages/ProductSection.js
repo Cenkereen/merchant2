@@ -16,44 +16,43 @@ function ProductSection({
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Fixed: Use consistent API URL with /api path
   const API_BASE = "https://merchant.somee.com/api";
 
-  // Fetch products from backend
+  const fetchProducts = async () => {
+    if (!merchant?.id) {
+      setProducts([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/Product`, {
+        headers: { 
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${merchant.accessToken}`
+        },
+      });
+
+      if (res.ok) {
+        const allProducts = await res.json();
+        const filteredProducts = allProducts.filter(p =>
+          parseInt(p.merchantId) === parseInt(merchant.id)
+        );
+        setProducts(filteredProducts);
+      } else {
+        setProducts([]);
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      if (!merchant?.merchantId) {
-        setProducts([]);
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const res = await fetch(`${API_BASE}/Product`, {
-          credentials: 'include',
-          headers: { 'Accept': 'application/json' }
-        });
-
-        if (res.ok) {
-          const allProducts = await res.json();
-          const filteredProducts = allProducts.filter(p => 
-            parseInt(p.merchantId) === parseInt(merchant.merchantId)
-          );
-          setProducts(filteredProducts);
-        } else {
-          setProducts([]);
-        }
-      } catch (err) {
-        console.error('Error fetching products:', err);
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
-  }, [merchant?.merchantId, setProducts]);
+  }, [merchant?.id]);
 
   const handleEditClick = (index, product) => {
     setEditingProduct({ ...product, index });
@@ -63,22 +62,16 @@ function ProductSection({
 
   const handleDeleteProduct = async (index) => {
     const product = products[index];
-    if (!product?.productId) {
-      alert('Product ID not found');
-      return;
-    }
-
+    if (!product?.productId) return alert('Product ID not found');
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      // Fixed: Now using correct API URL with /api path
       const res = await fetch(`${API_BASE}/Product/${product.productId}`, {
         method: 'DELETE',
-        credentials: 'include',
+        headers: { 'Authorization': `Bearer ${merchant.accessToken}` }
       });
 
       if (res.ok) {
-        // Remove deleted product from state
         const updatedProducts = products.filter((_, i) => i !== index);
         setProducts(updatedProducts);
 
@@ -99,25 +92,6 @@ function ProductSection({
   const handleAddProductClick = () => setShowAddProduct(true);
   const handleCancelAdd = () => setShowAddProduct(false);
 
-  const refreshProducts = async () => {
-    if (!merchant?.merchantId) return;
-    try {
-      const res = await fetch(`${API_BASE}/Product`, {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json' }
-      });
-      if (res.ok) {
-        const allProducts = await res.json();
-        const filteredProducts = allProducts.filter(p => 
-          parseInt(p.merchantId) === parseInt(merchant.merchantId)
-        );
-        setProducts(filteredProducts);
-      }
-    } catch (err) {
-      console.error('Error refreshing products:', err);
-    }
-  };
-
   if (editingProduct) {
     return (
       <EditProduct
@@ -126,7 +100,7 @@ function ProductSection({
         setProducts={setProducts}
         onCancel={handleCancelEdit}
         merchant={merchant}
-        onSave={refreshProducts}
+        onSave={fetchProducts}
       />
     );
   }
@@ -143,7 +117,7 @@ function ProductSection({
         setProductPrice={setProductPrice}
         handleAddProduct={handleAddProduct}
         merchant={merchant}
-        onSave={refreshProducts}
+        onSave={fetchProducts}
       />
     );
   }

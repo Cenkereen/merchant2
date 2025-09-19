@@ -32,7 +32,6 @@ function SidebarButton({ active, onClick, children }) {
 }
 
 function MerchantPage({ merchant, onLogout }) {
-  // State for merchant data
   const [merchantData, setMerchantData] = useState(merchant);
   const [merchantName, setMerchantName] = useState(merchant?.name || '');
   const [merchantEmailState, setMerchantEmailState] = useState(merchant?.email || '');
@@ -45,7 +44,6 @@ function MerchantPage({ merchant, onLogout }) {
   const [activeSection, setActiveSection] = useState('merchant');
   const [isHovered, setIsHovered] = useState(false);
 
-  // Update local state when merchant prop changes
   useEffect(() => {
     if (merchant) {
       setMerchantData(merchant);
@@ -62,7 +60,7 @@ function MerchantPage({ merchant, onLogout }) {
       {
         name: productName,
         price: parseFloat(productPrice),
-        CreatedAt: new Date(),
+        createdAt: new Date(),
       },
     ]);
     setProductName('');

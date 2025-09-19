@@ -11,7 +11,7 @@ function LoginRegisterPage({ onLogin }) {
   const [success, setSuccess] = useState('');
 
   // Railway backend base URL
-const API_BASE = "https://merchant.somee.com/api/MerchantAuth";
+  const API_BASE = "https://merchant.somee.com/api/MerchantAuth";
 
   const handleInputChange = (e) => {
     setFormData({
@@ -59,6 +59,11 @@ const API_BASE = "https://merchant.somee.com/api/MerchantAuth";
       const data = await response.json();
       
       if (isLogin) {
+        // Store tokens in localStorage for protected API calls
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+
+        // Pass merchant info to parent
         onLogin(data.merchant);
       } else {
         setSuccess('Register Successful');

@@ -16,7 +16,7 @@ function AddProduct({
   const [localPrice, setLocalPrice] = useState(productPrice || '');
   const [loading, setLoading] = useState(false);
 
-  // Use the Somee hosted API URL (HTTP)
+  // API base URL
   const API_URL = "https://merchant.somee.com/api";
 
   const handleSaveProduct = async () => {
@@ -27,9 +27,12 @@ function AddProduct({
       // Add product
       const res = await fetch(`${API_URL}/Product`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+        },
         body: JSON.stringify({
-          merchantId: merchant.merchantId,
+          merchantId: merchant.id, // <-- updated field
           name: localName.trim(),
           price: parseFloat(localPrice)
         })
@@ -38,17 +41,20 @@ function AddProduct({
       if (res.ok) {
         // Fetch all products and filter by merchant
         const productsRes = await fetch(`${API_URL}/Product`, {
-          headers: { 'Accept': 'application/json' }
+          headers: { 
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+          }
         });
         
         if (productsRes.ok) {
           const allProducts = await productsRes.json();
           const filteredProducts = allProducts.filter(product => 
-            parseInt(product.merchantId) === parseInt(merchant.merchantId)
+            parseInt(product.merchantId) === parseInt(merchant.id)
           );
           setProducts(filteredProducts);
         }
-        
+
         // Clear the form and go back
         setLocalName('');
         setLocalPrice('');

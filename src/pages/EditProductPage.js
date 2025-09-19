@@ -15,9 +15,12 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
     try {
       const res = await fetch(`${API_URL}/Product/${editingProduct.productId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+        },
         body: JSON.stringify({
-          merchantId: merchant.merchantId,
+          merchantId: merchant.id, // <-- updated field
           name: editName.trim(),
           price: parseFloat(editPrice),
         }),
@@ -26,13 +29,16 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
       if (res.ok) {
         // Fetch all products and filter by merchant
         const productsRes = await fetch(`${API_URL}/Product`, {
-          headers: { Accept: 'application/json' },
+          headers: { 
+            Accept: 'application/json',
+            'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+          },
         });
         
         if (productsRes.ok) {
           const allProducts = await productsRes.json();
           const filteredProducts = allProducts.filter(product => 
-            parseInt(product.merchantId) === parseInt(merchant.merchantId)
+            parseInt(product.merchantId) === parseInt(merchant.id)
           );
           setProducts(filteredProducts);
         }
