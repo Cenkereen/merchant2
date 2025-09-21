@@ -13,6 +13,9 @@ function EditProductPage({ editingProduct, onCancel, onSave }) {
     setTimeout(() => setMessage(''), 3000);
   };
 
+  // Normalize product ID
+  const productId = editingProduct?.id ?? editingProduct?.Id ?? editingProduct?.productId ?? editingProduct?.ProductId;
+
   const handleSaveEdit = async () => {
     if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) {
       displayMessage('Please enter a valid name and price.');
@@ -28,7 +31,7 @@ function EditProductPage({ editingProduct, onCancel, onSave }) {
     }
 
     try {
-      const res = await fetch(`${API_URL}/Product/${editingProduct.id}`, {
+      const res = await fetch(`${API_URL}/Product/${productId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

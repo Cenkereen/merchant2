@@ -15,6 +15,8 @@ function ProductSection({ products, setProducts, merchant }) {
     setTimeout(() => setMessage(''), 3000);
   };
 
+  const getProductId = (product) => product.productId || product.ProductId || product.id || product.Id;
+
   const fetchProducts = async () => {
     if (!merchant?.id) {
       setProducts([]);
@@ -37,20 +39,14 @@ function ProductSection({ products, setProducts, merchant }) {
         },
       });
 
-      if (res.ok) {
-        const allProducts = await res.json();
-        const filteredProducts = allProducts.filter(
-          p => parseInt(p.merchantId) === parseInt(merchant.id)
-        );
-        setProducts(filteredProducts);
-      } else {
-        if (res.status === 401) {
-          displayMessage('Your session has expired. Please log in again.');
-        } else {
-          displayMessage('Failed to fetch products.');
-        }
-        setProducts([]);
-      }
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const allProducts = await res.json();
+      console.log("Fetched products:", allProducts);
+
+      const filteredProducts = allProducts.filter(
+        p => parseInt(p.merchantId) === parseInt(merchant.id)
+      );
+      setProducts(filteredProducts);
     } catch (err) {
       console.error('Error fetching products:', err);
       displayMessage('Error connecting to server.');
@@ -67,7 +63,13 @@ function ProductSection({ products, setProducts, merchant }) {
   const handleEditClick = (product) => setEditingProduct(product);
   const handleCancelEdit = () => setEditingProduct(null);
 
-  const handleDeleteProduct = async (productId) => {
+  const handleDeleteProduct = async (product) => {
+    const productId = getProductId(product);
+    if (!productId) {
+      displayMessage('Product ID missing. Cannot delete.');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     const token = localStorage.getItem('accessToken');
@@ -83,9 +85,8 @@ function ProductSection({ products, setProducts, merchant }) {
       });
 
       if (res.ok) {
-        displayMessage('Product deleted successfully.');
         fetchProducts();
-        if (editingProduct?.id === productId) {
+        if (editingProduct && getProductId(editingProduct) === productId) {
           handleCancelEdit();
         }
       } else {
@@ -123,16 +124,21 @@ function ProductSection({ products, setProducts, merchant }) {
     <section style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Your Products</h2>
-        <button onClick={() => setShowAddProduct(true)} style={{
-          padding: '10px 20px',
-          background: '#28a745',
-          color: '#fff',
-          border: 'none',
-          borderRadius: 4,
-          fontSize: 15,
-          fontWeight: 500,
-          cursor: 'pointer'
-        }}>+ Add Product</button>
+        <button
+          onClick={() => setShowAddProduct(true)}
+          style={{
+            padding: '10px 20px',
+            background: '#28a745',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            fontSize: 15,
+            fontWeight: 500,
+            cursor: 'pointer'
+          }}
+        >
+          + Add Product
+        </button>
       </div>
 
       {message && (
@@ -155,39 +161,42 @@ function ProductSection({ products, setProducts, merchant }) {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
-                <tr key={product.id} style={{ background: products.indexOf(product) % 2 === 0 ? '#fff' : '#fafbfc' }}>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.name}</td>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>${product.price?.toFixed(2) || '0.00'}</td>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>
-                    {product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}
-                  </td>
-                  <td style={{ padding: 8, verticalAlign: 'middle', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                      <button onClick={() => handleEditClick(product)} style={{
-                        padding: '4px 8px',
-                        background: '#007bff',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 3,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        fontWeight: 500
-                      }}>Edit</button>
-                      <button onClick={() => handleDeleteProduct(product.id)} style={{
-                        padding: '4px 8px',
-                        background: '#dc3545',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 3,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                        fontWeight: 500
-                      }}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {products.map((product) => {
+                const productId = getProductId(product);
+                return (
+                  <tr key={productId}>
+                    <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.name}</td>
+                    <td style={{ padding: 8, verticalAlign: 'middle' }}>${product.price?.toFixed(2) || '0.00'}</td>
+                    <td style={{ padding: 8, verticalAlign: 'middle' }}>
+                      {product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}
+                    </td>
+                    <td style={{ padding: 8, verticalAlign: 'middle', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                        <button onClick={() => handleEditClick(product)} style={{
+                          padding: '4px 8px',
+                          background: '#007bff',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 3,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          fontWeight: 500
+                        }}>Edit</button>
+                        <button onClick={() => handleDeleteProduct(product)} style={{
+                          padding: '4px 8px',
+                          background: '#dc3545',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 3,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          fontWeight: 500
+                        }}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
