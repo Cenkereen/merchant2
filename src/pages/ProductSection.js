@@ -1,26 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import EditProduct from './EditProductPage';
-import AddProduct from './AddProductPage';
+import EditProductPage from './EditProductPage';
+import AddProductPage from './AddProductPage';
 
 function ProductSection({
   products,
   setProducts,
-  productName,
-  setProductName,
-  productPrice,
-  setProductPrice,
-  handleAddProduct,
   merchant
 }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const [confirmingDelete, setConfirmingDelete] = useState(null);
 
   const API_BASE = "https://merchant.somee.com/api";
 
-  // Replaces alert and confirm for a better user experience
   const displayMessage = (text) => {
     setMessage(text);
     setTimeout(() => setMessage(''), 3000);
@@ -34,9 +27,8 @@ function ProductSection({
 
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      console.error('No authentication token found');
+      displayMessage('No authentication token found. Please log in again.');
       setProducts([]);
-      displayMessage('Your session has expired. Please log in again.');
       return;
     }
 
@@ -65,8 +57,8 @@ function ProductSection({
       }
     } catch (err) {
       console.error('Error fetching products:', err);
+      displayMessage('Error connecting to server. Please check your internet connection.');
       setProducts([]);
-      displayMessage('Error connecting to server.');
     } finally {
       setLoading(false);
     }
@@ -74,28 +66,16 @@ function ProductSection({
 
   useEffect(() => {
     fetchProducts();
-  }, [merchant?.id, fetchProducts]);
+  }, [merchant?.id]);
 
-  const handleEditClick = (index, product) => {
-    setEditingProduct({ ...product, index });
+  const handleEditClick = (product) => {
+    setEditingProduct(product);
   };
 
   const handleCancelEdit = () => setEditingProduct(null);
 
-  const handleDeleteProduct = async (index) => {
-    const product = products[index];
-    if (!product?.id) {
-      displayMessage('Product ID not found');
-      return;
-    }
-
-    // Use a state-based confirmation instead of window.confirm
-    setConfirmingDelete(product);
-  };
-
-  const confirmDelete = async () => {
-    const product = confirmingDelete;
-    if (!product) return;
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -103,22 +83,20 @@ function ProductSection({
       return;
     }
 
-    setLoading(true);
-    setConfirmingDelete(null); // Close confirmation message
-
     try {
-      const res = await fetch(`${API_BASE}/Product/${product.id}`, {
+      const res = await fetch(`${API_BASE}/Product/${productId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (res.ok) {
-        // Refresh the product list after a successful deletion
-        await fetchProducts();
-        if (editingProduct && editingProduct.id === product.id) {
-            handleCancelEdit();
-        }
         displayMessage('Product deleted successfully.');
+        // Re-fetch the product list to ensure UI is in sync with the server
+        fetchProducts();
+        // If the deleted product was being edited, cancel the edit mode
+        if (editingProduct?.id === productId) {
+          handleCancelEdit();
+        }
       } else {
         const errorText = await res.text();
         console.error('Delete failed:', errorText);
@@ -127,25 +105,17 @@ function ProductSection({
     } catch (err) {
       console.error('Delete error:', err);
       displayMessage('Error deleting product.');
-    } finally {
-      setLoading(false);
     }
   };
-
-  const handleCancelDelete = () => setConfirmingDelete(null);
 
   const handleAddProductClick = () => setShowAddProduct(true);
   const handleCancelAdd = () => setShowAddProduct(false);
 
-  // Return EditProductPage or AddProductPage if they are active
   if (editingProduct) {
     return (
-      <EditProduct
+      <EditProductPage
         editingProduct={editingProduct}
-        products={products}
-        setProducts={setProducts}
         onCancel={handleCancelEdit}
-        merchant={merchant}
         onSave={fetchProducts}
       />
     );
@@ -153,15 +123,8 @@ function ProductSection({
 
   if (showAddProduct) {
     return (
-      <AddProduct
-        products={products}
-        setProducts={setProducts}
+      <AddProductPage
         onCancel={handleCancelAdd}
-        productName={productName}
-        setProductName={setProductName}
-        productPrice={productPrice}
-        setProductPrice={setProductPrice}
-        handleAddProduct={handleAddProduct}
         merchant={merchant}
         onSave={fetchProducts}
       />
@@ -185,7 +148,7 @@ function ProductSection({
       </div>
 
       {message && (
-        <div style={{ padding: '10px', backgroundColor: '#e9f7ef', color: '#28a745', borderRadius: '4px', marginBottom: '16px' }}>
+        <div style={{ padding: '10px', backgroundColor: '#ffe9e9', color: '#dc3545', borderRadius: '4px', marginBottom: '16px' }}>
           {message}
         </div>
       )}
@@ -204,8 +167,8 @@ function ProductSection({
               </tr>
             </thead>
             <tbody>
-              {products.map((product, index) => (
-                <tr key={product.id || index} style={{ background: index % 2 === 0 ? '#fff' : '#fafbfc' }}>
+              {products.map((product) => (
+                <tr key={product.id} style={{ background: products.indexOf(product) % 2 === 0 ? '#fff' : '#fafbfc' }}>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.name}</td>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>${product.price?.toFixed(2) || '0.00'}</td>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>
@@ -213,7 +176,7 @@ function ProductSection({
                   </td>
                   <td style={{ padding: 8, verticalAlign: 'middle', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-                      <button onClick={() => handleEditClick(index, product)} style={{
+                      <button onClick={() => handleEditClick(product)} style={{
                         padding: '4px 8px',
                         background: '#007bff',
                         color: '#fff',
@@ -223,7 +186,7 @@ function ProductSection({
                         cursor: 'pointer',
                         fontWeight: 500
                       }}>Edit</button>
-                      <button onClick={() => handleDeleteProduct(index)} style={{
+                      <button onClick={() => handleDeleteProduct(product.id)} style={{
                         padding: '4px 8px',
                         background: '#dc3545',
                         color: '#fff',
@@ -242,16 +205,6 @@ function ProductSection({
         </div>
       ) : (
         <div style={{ color: '#888', fontSize: 15, marginTop: 8 }}>No products found for your merchant account.</div>
-      )}
-
-      {confirmingDelete && (
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 1000 }}>
-          <p style={{ margin: '0 0 16px' }}>Are you sure you want to delete "{confirmingDelete.name}"?</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-            <button onClick={confirmDelete} style={{ padding: '8px 16px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Yes, Delete</button>
-            <button onClick={handleCancelDelete} style={{ padding: '8px 16px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
-          </div>
-        </div>
       )}
     </section>
   );

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 
-function EditProductPage({ editingProduct, products, setProducts, onCancel, merchant, onSave }) {
+function EditProductPage({ editingProduct, onCancel, onSave }) {
   const [editName, setEditName] = useState(editingProduct?.name || '');
   const [editPrice, setEditPrice] = useState(editingProduct?.price?.toString() || '');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Somee hosted backend API
   const API_URL = "https://merchant.somee.com/api";
 
   const displayMessage = (text) => {
@@ -15,10 +14,12 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
   };
 
   const handleSaveEdit = async () => {
-    if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) return;
+    if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) {
+      displayMessage('Please enter a valid name and price.');
+      return;
+    }
     setLoading(true);
 
-    // ✅ FIX: Retrieve token from localStorage, not from the merchant prop
     const token = localStorage.getItem('accessToken');
     if (!token) {
       displayMessage('Authentication token missing. Please log in again.');
@@ -29,27 +30,29 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
     try {
       const res = await fetch(`${API_URL}/Product/${editingProduct.id}`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // ✅ Use the retrieved token
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
+          id: editingProduct.id,
           name: editName.trim(),
           price: parseFloat(editPrice),
+          merchantId: editingProduct.merchantId
         }),
       });
 
       if (res.ok) {
-        // Since the onSave prop is provided, we'll let the parent component refresh the data
-        if (onSave) onSave(); 
+        if (onSave) onSave();
         onCancel();
+        displayMessage('Product updated successfully!');
       } else {
         const errorData = await res.json().catch(() => ({}));
         displayMessage(errorData.message || 'Failed to update product');
       }
     } catch (err) {
       console.error(err);
-      displayMessage('Error connecting to server');
+      displayMessage('Error connecting to server.');
     }
 
     setLoading(false);
