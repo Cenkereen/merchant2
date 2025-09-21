@@ -15,9 +15,15 @@ function AddProduct({
   const [localName, setLocalName] = useState(productName || '');
   const [localPrice, setLocalPrice] = useState(productPrice || '');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   // API base URL
   const API_URL = "https://merchant.somee.com/api";
+
+  const displayMessage = (text) => {
+    setMessage(text);
+    setTimeout(() => setMessage(''), 3000);
+  };
 
   const handleSaveProduct = async () => {
     if (!localName.trim() || !localPrice || parseFloat(localPrice) < 0) return;
@@ -26,7 +32,7 @@ function AddProduct({
     // Get token from localStorage
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      alert('Authentication token missing. Please log in again.');
+      displayMessage('Authentication token missing. Please log in again.');
       setLoading(false);
       return;
     }
@@ -47,37 +53,22 @@ function AddProduct({
       });
 
       if (res.ok) {
-        // Fetch all products and filter by merchant
-        const productsRes = await fetch(`${API_URL}/Product`, {
-          headers: { 
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (productsRes.ok) {
-          const allProducts = await productsRes.json();
-          const filteredProducts = allProducts.filter(product => 
-            parseInt(product.merchantId) === parseInt(merchant.id)
-          );
-          setProducts(filteredProducts);
-        }
-
+        // Since the onSave prop is provided, we'll let the parent component refresh the data
+        if (onSave) onSave();
         // Clear the form and go back
         setLocalName('');
         setLocalPrice('');
-        if (onSave) onSave();
         onCancel();
       } else {
         const errorData = await res.json().catch(() => ({}));
-        alert(errorData.message || 'Failed to add product');
+        displayMessage(errorData.message || 'Failed to add product');
       }
     } catch (err) {
       console.error(err);
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
-        alert('Unable to connect to server. Please check your internet connection.');
+        displayMessage('Unable to connect to server. Please check your internet connection.');
       } else {
-        alert('Error connecting to server');
+        displayMessage('Error connecting to server');
       }
     }
 
@@ -85,7 +76,7 @@ function AddProduct({
   };
 
   return (
-    <section>
+    <section style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button
           onClick={onCancel}
@@ -106,6 +97,13 @@ function AddProduct({
         </button>
         <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Add Product</h2>
       </div>
+
+      {message && (
+        <div style={{ padding: '10px', backgroundColor: '#ffe9e9', color: '#dc3545', borderRadius: '4px', marginBottom: '16px' }}>
+          {message}
+        </div>
+      )}
+
       <div style={{ 
         background: '#f9f9f9', 
         padding: 20, 

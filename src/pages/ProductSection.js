@@ -15,8 +15,16 @@ function ProductSection({
   const [editingProduct, setEditingProduct] = useState(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(null);
 
   const API_BASE = "https://merchant.somee.com/api";
+
+  // Replaces alert and confirm for a better user experience
+  const displayMessage = (text) => {
+    setMessage(text);
+    setTimeout(() => setMessage(''), 3000);
+  };
 
   const fetchProducts = async () => {
     if (!merchant?.id) {
@@ -28,6 +36,7 @@ function ProductSection({
     if (!token) {
       console.error('No authentication token found');
       setProducts([]);
+      displayMessage('Your session has expired. Please log in again.');
       return;
     }
 
@@ -48,13 +57,16 @@ function ProductSection({
         setProducts(filteredProducts);
       } else {
         if (res.status === 401) {
-          alert('Your session has expired. Please log in again.');
+          displayMessage('Your session has expired. Please log in again.');
+        } else {
+          displayMessage('Failed to fetch products.');
         }
         setProducts([]);
       }
     } catch (err) {
       console.error('Error fetching products:', err);
       setProducts([]);
+      displayMessage('Error connecting to server.');
     } finally {
       setLoading(false);
     }
@@ -62,10 +74,9 @@ function ProductSection({
 
   useEffect(() => {
     fetchProducts();
-  }, [merchant?.id]);
+  }, [merchant?.id, fetchProducts]);
 
   const handleEditClick = (index, product) => {
-    // Backend expects id, not productId
     setEditingProduct({ ...product, index });
   };
 
@@ -73,14 +84,27 @@ function ProductSection({
 
   const handleDeleteProduct = async (index) => {
     const product = products[index];
-    if (!product?.id) return alert('Product ID not found');
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    if (!product?.id) {
+      displayMessage('Product ID not found');
+      return;
+    }
+
+    // Use a state-based confirmation instead of window.confirm
+    setConfirmingDelete(product);
+  };
+
+  const confirmDelete = async () => {
+    const product = confirmingDelete;
+    if (!product) return;
 
     const token = localStorage.getItem('accessToken');
     if (!token) {
-      alert('Authentication token missing. Please log in again.');
+      displayMessage('Authentication token missing. Please log in again.');
       return;
     }
+
+    setLoading(true);
+    setConfirmingDelete(null); // Close confirmation message
 
     try {
       const res = await fetch(`${API_BASE}/Product/${product.id}`, {
@@ -89,26 +113,31 @@ function ProductSection({
       });
 
       if (res.ok) {
-        const updatedProducts = products.filter((_, i) => i !== index);
-        setProducts(updatedProducts);
-
-        if (editingProduct && editingProduct.index === index) handleCancelEdit();
-        else if (editingProduct && editingProduct.index > index)
-          setEditingProduct({ ...editingProduct, index: editingProduct.index - 1 });
+        // Refresh the product list after a successful deletion
+        await fetchProducts();
+        if (editingProduct && editingProduct.id === product.id) {
+            handleCancelEdit();
+        }
+        displayMessage('Product deleted successfully.');
       } else {
         const errorText = await res.text();
         console.error('Delete failed:', errorText);
-        alert('Failed to delete product');
+        displayMessage('Failed to delete product.');
       }
     } catch (err) {
       console.error('Delete error:', err);
-      alert('Error deleting product');
+      displayMessage('Error deleting product.');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleCancelDelete = () => setConfirmingDelete(null);
 
   const handleAddProductClick = () => setShowAddProduct(true);
   const handleCancelAdd = () => setShowAddProduct(false);
 
+  // Return EditProductPage or AddProductPage if they are active
   if (editingProduct) {
     return (
       <EditProduct
@@ -140,7 +169,7 @@ function ProductSection({
   }
 
   return (
-    <section>
+    <section style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Your Products</h2>
         <button onClick={handleAddProductClick} style={{
@@ -154,6 +183,12 @@ function ProductSection({
           cursor: 'pointer'
         }}>+ Add Product</button>
       </div>
+
+      {message && (
+        <div style={{ padding: '10px', backgroundColor: '#e9f7ef', color: '#28a745', borderRadius: '4px', marginBottom: '16px' }}>
+          {message}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ color: '#666', fontSize: 15, marginTop: 8 }}>Loading products...</div>
@@ -207,6 +242,16 @@ function ProductSection({
         </div>
       ) : (
         <div style={{ color: '#888', fontSize: 15, marginTop: 8 }}>No products found for your merchant account.</div>
+      )}
+
+      {confirmingDelete && (
+        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', zIndex: 1000 }}>
+          <p style={{ margin: '0 0 16px' }}>Are you sure you want to delete "{confirmingDelete.name}"?</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+            <button onClick={confirmDelete} style={{ padding: '8px 16px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Yes, Delete</button>
+            <button onClick={handleCancelDelete} style={{ padding: '8px 16px', background: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+          </div>
+        </div>
       )}
     </section>
   );

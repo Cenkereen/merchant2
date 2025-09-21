@@ -4,20 +4,34 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
   const [editName, setEditName] = useState(editingProduct?.name || '');
   const [editPrice, setEditPrice] = useState(editingProduct?.price?.toString() || '');
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   // Somee hosted backend API
   const API_URL = "https://merchant.somee.com/api";
 
+  const displayMessage = (text) => {
+    setMessage(text);
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   const handleSaveEdit = async () => {
     if (!editName.trim() || !editPrice || parseFloat(editPrice) < 0) return;
     setLoading(true);
+
+    // ✅ FIX: Retrieve token from localStorage, not from the merchant prop
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      displayMessage('Authentication token missing. Please log in again.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`${API_URL}/Product/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${merchant.accessToken}`
+          'Authorization': `Bearer ${token}` // ✅ Use the retrieved token
         },
         body: JSON.stringify({
           name: editName.trim(),
@@ -26,38 +40,23 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
       });
 
       if (res.ok) {
-        // Fetch all products and filter by merchant
-        const productsRes = await fetch(`${API_URL}/Product`, {
-          headers: { 
-            Accept: 'application/json',
-            'Authorization': `Bearer ${merchant.accessToken}`
-          },
-        });
-        
-        if (productsRes.ok) {
-          const allProducts = await productsRes.json();
-          const filteredProducts = allProducts.filter(product => 
-            parseInt(product.merchantId) === parseInt(merchant.id)
-          );
-          setProducts(filteredProducts);
-        }
-        
+        // Since the onSave prop is provided, we'll let the parent component refresh the data
         if (onSave) onSave(); 
         onCancel();
       } else {
         const errorData = await res.json().catch(() => ({}));
-        alert(errorData.message || 'Failed to update product');
+        displayMessage(errorData.message || 'Failed to update product');
       }
     } catch (err) {
       console.error(err);
-      alert('Error connecting to server');
+      displayMessage('Error connecting to server');
     }
 
     setLoading(false);
   };
 
   return (
-    <section>
+    <section style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button
           onClick={onCancel}
@@ -78,6 +77,12 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
         </button>
         <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Edit Product</h2>
       </div>
+
+      {message && (
+        <div style={{ padding: '10px', backgroundColor: '#ffe9e9', color: '#dc3545', borderRadius: '4px', marginBottom: '16px' }}>
+          {message}
+        </div>
+      )}
 
       <div
         style={{
