@@ -2,11 +2,7 @@ import React, { useEffect, useState } from 'react';
 import EditProductPage from './EditProductPage';
 import AddProductPage from './AddProductPage';
 
-function ProductSection({
-  products,
-  setProducts,
-  merchant
-}) {
+function ProductSection({ products, setProducts, merchant }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,7 +53,7 @@ function ProductSection({
       }
     } catch (err) {
       console.error('Error fetching products:', err);
-      displayMessage('Error connecting to server. Please check your internet connection.');
+      displayMessage('Error connecting to server.');
       setProducts([]);
     } finally {
       setLoading(false);
@@ -68,10 +64,7 @@ function ProductSection({
     fetchProducts();
   }, [merchant?.id]);
 
-  const handleEditClick = (product) => {
-    setEditingProduct(product);
-  };
-
+  const handleEditClick = (product) => setEditingProduct(product);
   const handleCancelEdit = () => setEditingProduct(null);
 
   const handleDeleteProduct = async (productId) => {
@@ -91,9 +84,7 @@ function ProductSection({
 
       if (res.ok) {
         displayMessage('Product deleted successfully.');
-        // Re-fetch the product list to ensure UI is in sync with the server
         fetchProducts();
-        // If the deleted product was being edited, cancel the edit mode
         if (editingProduct?.id === productId) {
           handleCancelEdit();
         }
@@ -108,9 +99,6 @@ function ProductSection({
     }
   };
 
-  const handleAddProductClick = () => setShowAddProduct(true);
-  const handleCancelAdd = () => setShowAddProduct(false);
-
   if (editingProduct) {
     return (
       <EditProductPage
@@ -124,7 +112,7 @@ function ProductSection({
   if (showAddProduct) {
     return (
       <AddProductPage
-        onCancel={handleCancelAdd}
+        onCancel={() => setShowAddProduct(false)}
         merchant={merchant}
         onSave={fetchProducts}
       />
@@ -135,7 +123,7 @@ function ProductSection({
     <section style={{ padding: '20px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <h2 style={{ color: '#222', fontSize: 20, margin: 0 }}>Your Products</h2>
-        <button onClick={handleAddProductClick} style={{
+        <button onClick={() => setShowAddProduct(true)} style={{
           padding: '10px 20px',
           background: '#28a745',
           color: '#fff',

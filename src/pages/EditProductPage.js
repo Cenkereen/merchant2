@@ -35,10 +35,8 @@ function EditProductPage({ editingProduct, onCancel, onSave }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          id: editingProduct.id,
           name: editName.trim(),
-          price: parseFloat(editPrice),
-          merchantId: editingProduct.merchantId
+          price: parseFloat(editPrice)
         }),
       });
 
@@ -97,15 +95,7 @@ function EditProductPage({ editingProduct, onCancel, onSave }) {
         }}
       >
         <div style={{ marginBottom: 16 }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: 6,
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#333',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#333' }}>
             Product Name
           </label>
           <input
@@ -125,15 +115,7 @@ function EditProductPage({ editingProduct, onCancel, onSave }) {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: 6,
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#333',
-            }}
-          >
+          <label style={{ display: 'block', marginBottom: 6, fontSize: 14, fontWeight: 500, color: '#333' }}>
             Price ($)
           </label>
           <input
