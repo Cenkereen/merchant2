@@ -15,19 +15,26 @@ function MerchantInfo({
   const API_URL = "https://merchant.somee.com/api";
 
   const handleUpdateField = async (field, value) => {
-    if (!merchant?.merchantId) {
+    if (!merchant?.id) {
       alert('Merchant information is missing. Please try logging out and logging back in.');
       return;
     }
 
+    // Get token from localStorage
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('Authentication token missing. Please log in again.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/Merchant/${merchant.merchantId}`, {
+      const res = await fetch(`${API_URL}/Merchant/${merchant.id}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include',
         body: JSON.stringify({ [field]: value })
       });
 
@@ -70,7 +77,7 @@ function MerchantInfo({
     <section>
       <h2 style={{ color: '#222', fontSize: 20, marginBottom: 12 }}>Merchant Info</h2>
 
-      <form style={{ display: 'flex', gap: 8, marginBottom: 8 }} onSubmit={handleMerchantNameUpdate}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         <input
           type="text"
           value={merchantName}
@@ -79,10 +86,10 @@ function MerchantInfo({
           style={updateInputStyle}
           required
         />
-        <button type="submit" style={updateButtonStyle}>Update Name</button>
-      </form>
+        <button onClick={handleMerchantNameUpdate} style={updateButtonStyle}>Update Name</button>
+      </div>
 
-      <form style={{ display: 'flex', gap: 8, marginBottom: 8 }} onSubmit={handleMerchantEmailUpdate}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
         <input
           type="email"
           value={merchantEmailState}
@@ -91,10 +98,10 @@ function MerchantInfo({
           style={updateInputStyle}
           required
         />
-        <button type="submit" style={updateButtonStyle}>Update Email</button>
-      </form>
+        <button onClick={handleMerchantEmailUpdate} style={updateButtonStyle}>Update Email</button>
+      </div>
 
-      <form style={{ display: 'flex', gap: 8 }} onSubmit={handleMerchantPasswordUpdate}>
+      <div style={{ display: 'flex', gap: 8 }}>
         <input
           type="password"
           value={merchantPassword}
@@ -103,8 +110,8 @@ function MerchantInfo({
           style={updateInputStyle}
           required
         />
-        <button type="submit" style={updateButtonStyle}>Update Password</button>
-      </form>
+        <button onClick={handleMerchantPasswordUpdate} style={updateButtonStyle}>Update Password</button>
+      </div>
     </section>
   );
 }

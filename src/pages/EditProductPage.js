@@ -13,14 +13,13 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/Product/${editingProduct.productId}`, {
+      const res = await fetch(`${API_URL}/Product/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+          'Authorization': `Bearer ${merchant.accessToken}`
         },
         body: JSON.stringify({
-          merchantId: merchant.id, // <-- updated field
           name: editName.trim(),
           price: parseFloat(editPrice),
         }),
@@ -31,7 +30,7 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
         const productsRes = await fetch(`${API_URL}/Product`, {
           headers: { 
             Accept: 'application/json',
-            'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+            'Authorization': `Bearer ${merchant.accessToken}`
           },
         });
         
@@ -43,10 +42,10 @@ function EditProductPage({ editingProduct, products, setProducts, onCancel, merc
           setProducts(filteredProducts);
         }
         
-        if (onSave) onSave(); // Call onSave callback if provided
+        if (onSave) onSave(); 
         onCancel();
       } else {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({}));
         alert(errorData.message || 'Failed to update product');
       }
     } catch (err) {

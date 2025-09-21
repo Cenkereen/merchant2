@@ -23,16 +23,24 @@ function AddProduct({
     if (!localName.trim() || !localPrice || parseFloat(localPrice) < 0) return;
     setLoading(true);
 
+    // Get token from localStorage
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('Authentication token missing. Please log in again.');
+      setLoading(false);
+      return;
+    }
+
     try {
       // Add product
       const res = await fetch(`${API_URL}/Product`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          merchantId: merchant.id, // <-- updated field
+          merchantId: merchant.id,
           name: localName.trim(),
           price: parseFloat(localPrice)
         })
@@ -43,7 +51,7 @@ function AddProduct({
         const productsRes = await fetch(`${API_URL}/Product`, {
           headers: { 
             'Accept': 'application/json',
-            'Authorization': `Bearer ${merchant.accessToken}` // <-- include token
+            'Authorization': `Bearer ${token}`
           }
         });
         
@@ -61,12 +69,16 @@ function AddProduct({
         if (onSave) onSave();
         onCancel();
       } else {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({}));
         alert(errorData.message || 'Failed to add product');
       }
     } catch (err) {
       console.error(err);
-      alert('Error connecting to server');
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        alert('Unable to connect to server. Please check your internet connection.');
+      } else {
+        alert('Error connecting to server');
+      }
     }
 
     setLoading(false);

@@ -8,7 +8,7 @@ function TransactionsSection({ merchant }) {
   const [error, setError] = useState('');
 
   // Use the same API base as other components
-const API_BASE = 'https://merchant.somee.com';
+  const API_BASE = 'https://merchant.somee.com';
 
   const handleFilter = async (e) => {
     e.preventDefault();
@@ -21,8 +21,16 @@ const API_BASE = 'https://merchant.somee.com';
       return;
     }
 
-    if (!merchant?.merchantId) {
+    if (!merchant?.id) {
       setError('Merchant ID is missing');
+      setLoading(false);
+      return;
+    }
+
+    // Get token from localStorage
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setError('Authentication token missing. Please log in again.');
       setLoading(false);
       return;
     }
@@ -35,11 +43,11 @@ const API_BASE = 'https://merchant.somee.com';
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include',
         body: JSON.stringify({
-          merchantId: merchant.merchantId,
+          merchantId: merchant.id, // use id
           from: fromISO,
           to: toISO
         })
@@ -51,7 +59,12 @@ const API_BASE = 'https://merchant.somee.com';
           setLoading(false);
           return;
         }
-        const errorData = await res.json();
+        if (res.status === 401) {
+          setError('Your session has expired. Please log in again.');
+          setLoading(false);
+          return;
+        }
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || `HTTP error! status: ${res.status}`);
       }
 
@@ -65,7 +78,11 @@ const API_BASE = 'https://merchant.somee.com';
       }
     } catch (err) {
       console.error('Transaction fetch error:', err);
-      setError('Error fetching transactions: ' + err.message);
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Unable to connect to server. Please check your internet connection.');
+      } else {
+        setError('Error fetching transactions: ' + err.message);
+      }
       setTransactions([]);
     }
 
@@ -76,20 +93,57 @@ const API_BASE = 'https://merchant.somee.com';
     <section>
       <h2 style={{ color: '#222', fontSize: 20, marginBottom: 12 }}>Transactions</h2>
 
-      {error && <div style={{ background: '#fee', color: '#c00', padding: '8px 12px', borderRadius: 4, marginBottom: 12, fontSize: 14 }}>{error}</div>}
+      {error && (
+        <div style={{ 
+          background: '#fee', 
+          color: '#c00', 
+          padding: '8px 12px', 
+          borderRadius: 4, 
+          marginBottom: 12, 
+          fontSize: 14 
+        }}>
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleFilter} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <label style={{ fontSize: 14, color: '#666' }}>From:</label>
-          <input type="datetime-local" value={fromDate} onChange={e => setFromDate(e.target.value)} required style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #ddd', fontSize: 14 }} />
+          <input 
+            type="datetime-local" 
+            value={fromDate} 
+            onChange={e => setFromDate(e.target.value)} 
+            required 
+            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #ddd', fontSize: 14 }} 
+          />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <label style={{ fontSize: 14, color: '#666' }}>To:</label>
-          <input type="datetime-local" value={toDate} onChange={e => setToDate(e.target.value)} required style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #ddd', fontSize: 14 }} />
+          <input 
+            type="datetime-local" 
+            value={toDate} 
+            onChange={e => setToDate(e.target.value)} 
+            required 
+            style={{ padding: '8px 10px', borderRadius: 4, border: '1px solid #ddd', fontSize: 14 }} 
+          />
         </div>
 
-        <button type="submit" disabled={loading} style={{ padding: '8px 18px', background: loading ? '#ccc' : '#222', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', transition: 'background 0.2s' }}>
+        <button 
+          type="submit" 
+          disabled={loading} 
+          style={{ 
+            padding: '8px 18px', 
+            background: loading ? '#ccc' : '#222', 
+            color: '#fff', 
+            border: 'none', 
+            borderRadius: 4, 
+            fontSize: 14, 
+            fontWeight: 500, 
+            cursor: loading ? 'not-allowed' : 'pointer', 
+            transition: 'background 0.2s' 
+          }}
+        >
           {loading ? 'Loading...' : 'Filter'}
         </button>
       </form>

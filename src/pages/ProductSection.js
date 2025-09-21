@@ -24,22 +24,32 @@ function ProductSection({
       return;
     }
 
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.error('No authentication token found');
+      setProducts([]);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/Product`, {
         headers: { 
           'Accept': 'application/json',
-          'Authorization': `Bearer ${merchant.accessToken}`
+          'Authorization': `Bearer ${token}`
         },
       });
 
       if (res.ok) {
         const allProducts = await res.json();
-        const filteredProducts = allProducts.filter(p =>
-          parseInt(p.merchantId) === parseInt(merchant.id)
+        const filteredProducts = allProducts.filter(
+          p => parseInt(p.merchantId) === parseInt(merchant.id)
         );
         setProducts(filteredProducts);
       } else {
+        if (res.status === 401) {
+          alert('Your session has expired. Please log in again.');
+        }
         setProducts([]);
       }
     } catch (err) {
@@ -55,6 +65,7 @@ function ProductSection({
   }, [merchant?.id]);
 
   const handleEditClick = (index, product) => {
+    // Backend expects id, not productId
     setEditingProduct({ ...product, index });
   };
 
@@ -62,13 +73,19 @@ function ProductSection({
 
   const handleDeleteProduct = async (index) => {
     const product = products[index];
-    if (!product?.productId) return alert('Product ID not found');
+    if (!product?.id) return alert('Product ID not found');
     if (!window.confirm('Are you sure you want to delete this product?')) return;
 
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      alert('Authentication token missing. Please log in again.');
+      return;
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/Product/${product.productId}`, {
+      const res = await fetch(`${API_BASE}/Product/${product.id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${merchant.accessToken}` }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
 
       if (res.ok) {
@@ -153,10 +170,12 @@ function ProductSection({
             </thead>
             <tbody>
               {products.map((product, index) => (
-                <tr key={product.productId || index} style={{ background: index % 2 === 0 ? '#fff' : '#fafbfc' }}>
+                <tr key={product.id || index} style={{ background: index % 2 === 0 ? '#fff' : '#fafbfc' }}>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.name}</td>
                   <td style={{ padding: 8, verticalAlign: 'middle' }}>${product.price?.toFixed(2) || '0.00'}</td>
-                  <td style={{ padding: 8, verticalAlign: 'middle' }}>{product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}</td>
+                  <td style={{ padding: 8, verticalAlign: 'middle' }}>
+                    {product.createdAt ? new Date(product.createdAt).toLocaleString() : '-'}
+                  </td>
                   <td style={{ padding: 8, verticalAlign: 'middle', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
                       <button onClick={() => handleEditClick(index, product)} style={{
