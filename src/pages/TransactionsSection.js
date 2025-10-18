@@ -47,7 +47,7 @@ function TransactionsSection({ merchant }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          merchantId: merchant.id, // use id
+          merchantId: merchant.id,
           from: fromISO,
           to: toISO
         })
@@ -87,6 +87,33 @@ function TransactionsSection({ merchant }) {
     }
 
     setLoading(false);
+  };
+
+  // Helper function to get status styling
+  const getStatusStyle = (status) => {
+    const statusLower = status?.toLowerCase() || '';
+    
+    if (statusLower === 'completed' || statusLower === 'success' || statusLower === 'successful') {
+      return {
+        background: '#d4edda',
+        color: '#155724'
+      };
+    } else if (statusLower === 'pending' || statusLower === 'processing') {
+      return {
+        background: '#fff3cd',
+        color: '#856404'
+      };
+    } else if (statusLower === 'failed' || statusLower === 'cancelled' || statusLower === 'rejected') {
+      return {
+        background: '#f8d7da',
+        color: '#721c24'
+      };
+    } else {
+      return {
+        background: '#e2e3e5',
+        color: '#383d41'
+      };
+    }
   };
 
   return (
@@ -158,22 +185,27 @@ function TransactionsSection({ merchant }) {
           </tr>
         </thead>
         <tbody>
-          {transactions.length > 0 ? transactions.map((tx, idx) => (
-            <tr key={tx.transactionId || idx} style={{ background: idx % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #eee' }}>
-              <td style={{ padding: '10px 8px' }}>{tx.transactionId || '-'}</td>
-              <td style={{ padding: '10px 8px', fontWeight: 500 }}>${tx.totalAmount?.toFixed(2) || '0.00'}</td>
-              <td style={{ padding: '10px 8px' }}>
-                <span style={{
-                  padding: '2px 8px', borderRadius: 12, fontSize: 12, fontWeight: 500,
-                  background: tx.status === 'Completed' ? '#e8f5e8' : tx.status === 'Pending' ? '#fff3cd' : '#f8d7da',
-                  color: tx.status === 'Completed' ? '#0f5132' : tx.status === 'Pending' ? '#664d03' : '#721c24'
-                }}>
-                  {tx.status || 'Unknown'}
-                </span>
-              </td>
-              <td style={{ padding: '10px 8px', color: '#666' }}>{tx.createdAt ? new Date(tx.createdAt).toLocaleString() : '-'}</td>
-            </tr>
-          )) : (
+          {transactions.length > 0 ? transactions.map((tx, idx) => {
+            const statusStyle = getStatusStyle(tx.status);
+            return (
+              <tr key={tx.transactionId || idx} style={{ background: idx % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #eee' }}>
+                <td style={{ padding: '10px 8px' }}>{tx.transactionId || '-'}</td>
+                <td style={{ padding: '10px 8px', fontWeight: 500 }}>${tx.totalAmount?.toFixed(2) || '0.00'}</td>
+                <td style={{ padding: '10px 8px' }}>
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: 12,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    ...statusStyle
+                  }}>
+                    {tx.status || 'Unknown'}
+                  </span>
+                </td>
+                <td style={{ padding: '10px 8px', color: '#666' }}>{tx.createdAt ? new Date(tx.createdAt).toLocaleString() : '-'}</td>
+              </tr>
+            );
+          }) : (
             <tr>
               <td colSpan={4} style={{ color: '#888', fontSize: 14, padding: 20, textAlign: 'center', fontStyle: 'italic' }}>
                 {loading ? 'Loading transactions...' : 'No transactions found for the selected date range.'}
