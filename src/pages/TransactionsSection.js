@@ -178,7 +178,6 @@ function TransactionsSection({ merchant }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, border: '1px solid #eee' }}>
         <thead>
           <tr style={{ background: '#f8f9fa' }}>
-            <th style={{ padding: '12px 8px', borderBottom: '2px solid #eee', fontWeight: 600, color: '#555', textAlign: 'left' }}>Transaction ID</th>
             <th style={{ padding: '12px 8px', borderBottom: '2px solid #eee', fontWeight: 600, color: '#555', textAlign: 'left' }}>Amount</th>
             <th style={{ padding: '12px 8px', borderBottom: '2px solid #eee', fontWeight: 600, color: '#555', textAlign: 'left' }}>Status</th>
             <th style={{ padding: '12px 8px', borderBottom: '2px solid #eee', fontWeight: 600, color: '#555', textAlign: 'left' }}>Created</th>
@@ -189,7 +188,6 @@ function TransactionsSection({ merchant }) {
             const statusStyle = getStatusStyle(tx.status);
             return (
               <tr key={tx.transactionId || idx} style={{ background: idx % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '10px 8px' }}>{tx.transactionId || '-'}</td>
                 <td style={{ padding: '10px 8px', fontWeight: 500 }}>${tx.totalAmount?.toFixed(2) || '0.00'}</td>
                 <td style={{ padding: '10px 8px' }}>
                   <span style={{
@@ -207,7 +205,7 @@ function TransactionsSection({ merchant }) {
             );
           }) : (
             <tr>
-              <td colSpan={4} style={{ color: '#888', fontSize: 14, padding: 20, textAlign: 'center', fontStyle: 'italic' }}>
+              <td colSpan={3} style={{ color: '#888', fontSize: 14, padding: 20, textAlign: 'center', fontStyle: 'italic' }}>
                 {loading ? 'Loading transactions...' : 'No transactions found for the selected date range.'}
               </td>
             </tr>
